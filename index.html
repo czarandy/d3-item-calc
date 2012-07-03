@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Diablo III Item Calculator</title>
+<script type="text/javascript" src="knockout-2.1.0.js"></script>
+<link type="text/css" href="bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+<h1>Diablo III Item Calculator</h1>
+<h2>Items</h2>
+<table class="table table-striped table-bordered">
+  <thead>
+    <tr>
+      <th>Slot</th>
+      <th>Armor</th>
+      <th>Strength</th>
+      <th>Dexterity</th>
+      <th>Intelligence</th>
+      <th>Vitality</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- ko foreach: items -->
+    <tr>
+      <td data-bind="text: slot" />
+      <td><input data-bind="value: armor, valueUpdate: 'afterkeydown'" /></td>
+      <td><input data-bind="value: strength, valueUpdate: 'afterkeydown'" /></td>
+      <td><input data-bind="value: dexterity, valueUpdate: 'afterkeydown'" /></td>
+      <td><input data-bind="value: intelligence, valueUpdate: 'afterkeydown'" /></td>
+      <td><input data-bind="value: vitality, valueUpdate: 'afterkeydown'" /></td>
+    </tr>
+    <!-- /ko -->
+    <tr>
+      <td>Total</td>
+      <td data-bind="text: items.sum('armor')" />
+      <td data-bind="text: items.sum('strength')" />
+      <td data-bind="text: items.sum('dexterity')" />
+      <td data-bind="text: items.sum('intelligence')" />
+      <td data-bind="text: items.sum('vitality')" />
+    </tr>
+  </tbody>
+</table>
+
+<h2>Character Sheet</h2>
+<table class="table table-striped table-bordered">
+  <tbody>
+    <tr>
+      <th>Class</th>
+      <td>
+        <select data-bind="options: classes, value: clss, optionsText: 'name'" />
+      </td>
+    </tr>
+    <tr>
+      <th>Level</th>
+      <td>
+        <input data-bind="value: level, valueUpdate: 'afterkeydown'" />
+      </td>
+    </tr>
+    <tr>
+      <th>Strength</th>
+      <td data-bind="text: strength" />
+    </tr>
+    <tr>
+      <th>Dexterity</th>
+      <td data-bind="text: dexterity" />
+    </tr>
+    <tr>
+      <th>Intelligence</th>
+      <td data-bind="text: intelligence" />
+    </tr>
+    <tr>
+      <th>Vitality</th>
+      <td data-bind="text: vitality" />
+    </tr>
+    <tr>
+      <th>Life</th>
+      <td data-bind="text: life" />
+    </tr>
+    <tr>
+      <th>Armor</th>
+      <td data-bind="text: armor" />
+    </tr>
+    <tr>
+      <th>Damage Reduction</th>
+      <td data-bind="percent: dr" />
+    </tr>
+    <tr>
+      <th>Dodge</th>
+      <td data-bind="percent: dodge" />
+    </tr>
+  </tbody>
+</table>
+
+<h2>Item Contribution</h2>
+<table class="table table-striped table-bordered">
+</table>
+
+<script type="text/javascript">
+
+Array.prototype.pull = function(key) {
+  return this.map(function(x) { return x[key]; });
+}
+
+ko.observableArray.fn.sum = function(key) {
+  return ko.computed(function() {
+    return this().map(function(x) { return x[key]() | 0; })
+                 .reduce(function(a, b) { return a + b; });
+  }, this);
+}
+
+ko.bindingHandlers.percent = {
+  update : function(el, valueAccessor) {
+    var value = valueAccessor(),
+        formatted = (value() * 100).toFixed(2) + '%';
+    ko.bindingHandlers.text.update(el, function() { return formatted; });
+  }
+}
+
+/*
+ko.extenders.validator = function(target, validator) {
+  target.hasError = ko.observable(false);
+
+  function validate(newValue) {
+    target.hasError(!validator(newValue));
+  }
+  validate(target());
+  target.subscribe(validate);
+  return target;
+}
+*/
+
+function Item(slot) {
+  this.slot = slot;
+  this.armor = ko.observable();
+  this.strength = ko.observable();
+  this.dexterity = ko.observable();
+  this.intelligence = ko.observable();
+  this.vitality = ko.observable();
+}
+
+function Character() {
+  this.classes = [
+    {
+      name : 'Barbarian',
+      primary : 'strength'
+    },
+    {
+      name : 'Demon Hunter',
+      primary : 'dexterity'
+    },
+    {
+      name : 'Monk',
+      primary : 'dexterity'
+    },
+    {
+      name : 'Witch Doctor',
+      primary : 'intelligence'
+    },
+    {
+      name : 'Wizard',
+      primary : 'intelligence'
+    }
+  ];
+
+  this.clss = ko.observable(this.classes[0]);
+
+  this.level = ko.observable(60);
+
+  this.items = ko.observableArray([
+    new Item('Helm'),
+    new Item('Amulet')
+  ]);
+
+  function computeStat(stat) {
+    var multiplier = 1;
+    if (stat === 'vitality') {
+      multiplier = 2;
+    } else if (stat === this.clss().primary) {
+      multiplier = 3;
+    }
+    return 7 + this.items.sum(stat)() + this.level() * multiplier;
+  }
+
+  this.strength = ko.computed(computeStat.bind(this, 'strength'));
+  this.dexterity = ko.computed(computeStat.bind(this, 'dexterity'));
+  this.intelligence = ko.computed(computeStat.bind(this, 'intelligence'));
+  this.vitality = ko.computed(computeStat.bind(this, 'vitality'));
+
+  this.life = ko.computed(function() {
+    return 36 + 4 * this.level() + Math.max(10, this.level() - 10) * this.vitality();
+  }, this);
+
+  this.armor = ko.computed(function() {
+    return this.items.sum('armor')() + this.strength();
+  }, this);
+
+  this.dr = ko.computed(function() {
+    // Assumes monsters same level
+    return this.armor() / (50 * this.level() + this.armor());
+  }, this);
+
+  this.dodge = ko.computed(function() {
+    var dex = this.dexterity();
+    if (dex <= 100) {
+      return dex * 0.001;
+    }
+    if (dex <= 500) {
+      return 0.1 + (dex - 100) * 0.00025;
+    }
+    if (dex <= 1000) {
+      return 0.2 + (dex - 500) * 0.0002;
+    }
+    return 0.3 + (dex - 1000) * 0.0001;
+  }, this);
+
+};
+ko.applyBindings(new Character());
+</script>
+</body>
+</html>
