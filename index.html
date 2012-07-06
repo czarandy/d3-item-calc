@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>Diablo III Item Calculator</title>
+<title>Diablo III Survivability Calculator</title>
 <script type="text/javascript" src="knockout-2.1.0.js"></script>
 <link type="text/css" href="bootstrap.min.css" rel="stylesheet" />
 </head>
@@ -17,17 +17,51 @@
       <th>Dexterity</th>
       <th>Intelligence</th>
       <th>Vitality</th>
+      <th>All Resistance</th>
+      <th>Life Regen</th>
+      <th>Min Damage</th>
+      <th>Max Damage</th>
+      <th>Crit Chance</th>
+      <th>Crit Amount</th>
     </tr>
   </thead>
   <tbody>
     <!-- ko foreach: items -->
     <tr>
       <td data-bind="text: slot" />
-      <td><input data-bind="value: armor, valueUpdate: 'afterkeydown'" /></td>
-      <td><input data-bind="value: strength, valueUpdate: 'afterkeydown'" /></td>
-      <td><input data-bind="value: dexterity, valueUpdate: 'afterkeydown'" /></td>
-      <td><input data-bind="value: intelligence, valueUpdate: 'afterkeydown'" /></td>
-      <td><input data-bind="value: vitality, valueUpdate: 'afterkeydown'" /></td>
+      <td>
+        <input class="input-small" data-bind="value: armor, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: strength, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: dexterity, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: intelligence, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: vitality, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: allres, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: regen, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: mindmg, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: maxdmg, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: critchance, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: critamt, valueUpdate: 'afterkeydown'" />
+      </td>
     </tr>
     <!-- /ko -->
     <tr>
@@ -37,6 +71,12 @@
       <td data-bind="text: items.sum('dexterity')" />
       <td data-bind="text: items.sum('intelligence')" />
       <td data-bind="text: items.sum('vitality')" />
+      <td data-bind="text: items.sum('allres')" />
+      <td data-bind="text: items.sum('regen')" />
+      <td data-bind="text: items.sum('mindmg')" />
+      <td data-bind="text: items.sum('maxdmg')" />
+      <td data-bind="percent: items.sum('critchance')() / 100" />
+      <td data-bind="percent: items.sum('critamt')() / 100" />
     </tr>
   </tbody>
 </table>
@@ -53,7 +93,7 @@
     <tr>
       <th>Level</th>
       <td>
-        <input data-bind="value: level, valueUpdate: 'afterkeydown'" />
+        <input class="input-small" data-bind="value: level, valueUpdate: 'afterkeydown'" />
       </td>
     </tr>
     <tr>
@@ -77,6 +117,26 @@
       <td data-bind="text: life" />
     </tr>
     <tr>
+      <th>Critical Chance</th>
+      <td data-bind="percent: critchance" />
+    </tr>
+    <tr>
+      <th>Critical Amount</th>
+      <td data-bind="percent: critamt" />
+    </tr>
+    <tr>
+      <th>Damage</th>
+      <td data-bind="fixed: damage" />
+    </tr>
+    <tr>
+      <th>DPS (TODO)</th>
+      <td data-bind="fixed: damage" />
+    </tr>
+    <tr>
+      <th>Dodge</th>
+      <td data-bind="percent: dodge" />
+    </tr>
+    <tr>
       <th>Armor</th>
       <td data-bind="text: armor" />
     </tr>
@@ -85,8 +145,30 @@
       <td data-bind="percent: dr" />
     </tr>
     <tr>
-      <th>Dodge</th>
-      <td data-bind="percent: dodge" />
+      <th>Avg. Resistance</th>
+      <td data-bind="text: avgres" />
+    </tr>
+    <tr>
+      <th>Resistance DR</th>
+      <td data-bind="percent: resreduct" />
+    </tr>
+  </tbody>
+</table>
+
+<h2>Survivability</h2>
+<table class="table table-striped table-bordered">
+  <tbody>
+    <tr>
+      <th>Effective HP</th>
+      <td data-bind="floor: ehp" />
+    </tr>
+    <tr>
+      <th>Effective HP (w/ Dodge)</th>
+      <td data-bind="floor: ehpdodge" />
+    </tr>
+    <tr>
+      <th>Survivable Damage (10 sec)</th>
+      <td data-bind="floor: survive10" />
     </tr>
   </tbody>
 </table>
@@ -94,6 +176,8 @@
 <h2>Item Contribution</h2>
 <table class="table table-striped table-bordered">
 </table>
+
+<h2>Skills</h2>
 
 <script type="text/javascript">
 
@@ -111,31 +195,49 @@ ko.observableArray.fn.sum = function(key) {
 ko.bindingHandlers.percent = {
   update : function(el, valueAccessor) {
     var value = valueAccessor(),
-        formatted = (value() * 100).toFixed(2) + '%';
+        formatted = (ko.utils.unwrapObservable(value) * 100).toFixed(2) + '%';
     ko.bindingHandlers.text.update(el, function() { return formatted; });
   }
 }
 
-/*
-ko.extenders.validator = function(target, validator) {
-  target.hasError = ko.observable(false);
-
-  function validate(newValue) {
-    target.hasError(!validator(newValue));
+ko.bindingHandlers.floor = {
+  update : function(el, valueAccessor) {
+    var value = valueAccessor(),
+        formatted = Math.floor(ko.utils.unwrapObservable(value));
+    ko.bindingHandlers.text.update(el, function() { return formatted; });
   }
-  validate(target());
-  target.subscribe(validate);
-  return target;
 }
-*/
 
-function Item(slot) {
+ko.bindingHandlers.fixed = {
+  update : function(el, valueAccessor) {
+    var value = valueAccessor(),
+        formatted = ko.utils.unwrapObservable(value).toFixed(1);
+    ko.bindingHandlers.text.update(el, function() { return formatted; });
+  }
+}
+
+function Item(slot, items) {
+  var item = {};
+  if (items) {
+    for (var i = 0; i < items.length; ++i) {
+      if (items[i].slot === slot) {
+        item = items[i];
+        break;
+      }
+    }
+  }
   this.slot = slot;
-  this.armor = ko.observable();
-  this.strength = ko.observable();
-  this.dexterity = ko.observable();
-  this.intelligence = ko.observable();
-  this.vitality = ko.observable();
+  this.armor = ko.observable(item.armor);
+  this.strength = ko.observable(item.strength);
+  this.dexterity = ko.observable(item.dexterity);
+  this.intelligence = ko.observable(item.intelligence);
+  this.vitality = ko.observable(item.vitality);
+  this.allres = ko.observable(item.allres);
+  this.regen = ko.observable(item.regen);
+  this.mindmg = ko.observable(item.mindmg);
+  this.maxdmg = ko.observable(item.maxdmg);
+  this.critchance = ko.observable(item.critchance);
+  this.critamt = ko.observable(item.critamt);
 }
 
 function Character() {
@@ -162,13 +264,31 @@ function Character() {
     }
   ];
 
-  this.clss = ko.observable(this.classes[0]);
+  var saved_data = JSON.parse(localStorage.getItem('d3_data')) || {};
 
-  this.level = ko.observable(60);
+  var cur_class = this.classes[0];
+  if (saved_data.clss) {
+    for (var i = 0; i < this.classes.length; ++i) {
+      if (this.classes[i].name === saved_data.clss.name) {
+        cur_class = this.classes[i];
+        break;
+      }
+    }
+  }
+  this.clss = ko.observable(cur_class);
+
+  this.level = ko.observable(saved_data.level || 60);
 
   this.items = ko.observableArray([
-    new Item('Helm'),
-    new Item('Amulet')
+    new Item('Helm', saved_data.items),
+    new Item('Shoulders', saved_data.items),
+    new Item('Amulet', saved_data.items),
+    new Item('Chest', saved_data.items),
+    new Item('Gloves', saved_data.items),
+    new Item('Bracers', saved_data.items),
+    new Item('Belt', saved_data.items),
+    new Item('Ring (L)', saved_data.items),
+    new Item('Ring (R)', saved_data.items)
   ]);
 
   function computeStat(stat) {
@@ -188,6 +308,21 @@ function Character() {
 
   this.life = ko.computed(function() {
     return 36 + 4 * this.level() + Math.max(10, this.level() - 10) * this.vitality();
+  }, this);
+
+  this.critchance = ko.computed(function() {
+    return (5 + this.items.sum('critchance')()) / 100;
+  }, this);
+
+  this.critamt = ko.computed(function() {
+    return (50 + this.items.sum('critamt')()) / 100;
+  }, this);
+
+  this.damage = ko.computed(function() {
+    var stat = this[this.clss().primary]();
+    var dmg = (this.items.sum('mindmg')() + this.items.sum('maxdmg')()) / 2;
+    var crit = this.critamt() * this.critchance();
+    return dmg * (1 + crit) * (1 + stat / 100);
   }, this);
 
   this.armor = ko.computed(function() {
@@ -210,9 +345,57 @@ function Character() {
     if (dex <= 1000) {
       return 0.2 + (dex - 500) * 0.0002;
     }
-    return 0.3 + (dex - 1000) * 0.0001;
+    return Math.min(0.3 + (dex - 1000) * 0.0001, 1);
   }, this);
 
+  this.avgres = ko.computed(function() {
+    return this.items.sum('allres')() + this.intelligence() / 10;
+  }, this);
+
+  this.resreduct = ko.computed(function() {
+    var res = this.avgres();
+    return res / (5 * this.level() + res);
+  }, this);
+
+  var total_reduct = function(dodge) {
+    var dr = (1 - this.resreduct()) * (1 - this.dr());
+    if (dodge) {
+      dr *= (1 - this.dodge());
+    }
+    return dr;
+  }.bind(this);
+
+  this.ehp = ko.computed(function() {
+    return this.life() / total_reduct();
+  }, this);
+
+  this.ehpdodge = ko.computed(function() {
+    return this.life() / total_reduct(true);
+  }, this);
+
+  this.survive10 = ko.computed(function() {
+    var life_gain = this.items.sum('regen')(); // TODO: lph
+    var dr = total_reduct(true);
+    var life = this.life() + life_gain * 10;
+    return (life / dr) / 10;
+  }, this);
+
+  // Save data to local storage when anything changes. This is somewhat
+  // roundabout because we have to:
+  // a) avoid serializing this property along with the rest
+  // b) only call the save function once for each change
+  var current_data;
+  ko.computed(function() {
+    return ko.toJSON(this);
+  }, this).subscribe(function() {
+    setTimeout(function() {
+      var json_data = ko.toJSON(this);
+      if (json_data !== current_data) {
+        localStorage.setItem('d3_data', json_data);
+        current_data = json_data;
+      }
+    }.bind(this), 1);
+  }.bind(this));
 };
 ko.applyBindings(new Character());
 </script>
