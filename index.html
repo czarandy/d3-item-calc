@@ -112,6 +112,21 @@
       </td>
     </tr>
     <tr>
+      <th>Follower</th>
+      <td>
+        <select data-bind="options: followers, value : follower, optionsText : 'name'"></select>
+      </td>
+    </tr>
+    <tr>
+      <th>Follower Skills</th>
+      <td data-bind="foreach: $data.follower().skills">
+        <label class="checkbox">
+          <input type="checkbox" data-bind="checked: selected">
+          <span data-bind="text: name" />
+        </label>
+      </td>
+    </tr>
+    <tr>
       <th>Level</th>
       <td>
         <input class="input-small" data-bind="value: level, valueUpdate: 'afterkeydown'" />
@@ -351,6 +366,19 @@ function Character() {
     }
   ];
 
+  this.followers = [
+    {
+      name : 'Scoundrel',
+      skills : [
+        {
+          name : 'Anatomy',
+          crit : 3,
+          selected : ko.observable(false)
+        }
+      ]
+    }
+  ];
+
   var saved_data = JSON.parse(localStorage.getItem('d3_data')) || {};
 
   var cur_class = this.classes[0];
@@ -368,6 +396,22 @@ function Character() {
     }
   }
   this.clss = ko.observable(cur_class);
+
+  var cur_follower = this.followers[0];
+  if (saved_data.follower) {
+    for (var i = 0; i < this.followers.length; ++i) {
+      if (this.followers[i].name === saved_data.follower.name) {
+        cur_follower = this.followers[i];
+        for (var j = 0; j < saved_data.follower.skills.length; ++j) {
+          if (saved_data.follower.skills[j].selected) {
+            cur_follower.skills[j].selected(true);
+          }
+        }
+        break;
+      }
+    }
+  }
+  this.follower = ko.observable(cur_follower);
 
   this.level = ko.observable(saved_data.level || 60);
 
@@ -397,13 +441,16 @@ function Character() {
   }
 
   var selectedSkills = function(stat) {
-    var ret = 0;
-    for (var i = 0; i < this.clss().skills.length; ++i) {
-      if (this.clss().skills[i].selected()) {
-        ret += this.clss().skills[i][stat] || 0;
+    function helper(skills) {
+      var ret = 0;
+      for (var i = 0; i < skills.length; ++i) {
+        if (skills[i].selected()) {
+          ret += skills[i][stat] || 0;
+        }
       }
+      return ret;
     }
-    return ret;
+    return helper(this.clss().skills) + helper(this.follower().skills);
   }.bind(this);
 
   this.strength = ko.computed(computeStat.bind(this, 'strength'));
@@ -416,7 +463,9 @@ function Character() {
   }, this);
 
   this.critchance = ko.computed(function() {
-    return (5 + this.items.sum('critchance')()) / 100;
+    var chance = 5 + this.items.sum('critchance')();
+    var skill = selectedSkills('crit');
+    return (chance + skill) / 100;
   }, this);
 
   this.critamt = ko.computed(function() {
