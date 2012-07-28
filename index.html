@@ -18,7 +18,8 @@
       <th>Dexterity</th>
       <th>Intelligence</th>
       <th>Vitality</th>
-      <th>All Resistance</th>
+      <th>All Res</th>
+      <th>Single Res</th>
       <th>Life Regen</th>
       <th>Min Damage</th>
       <th>Max Damage</th>
@@ -56,6 +57,9 @@
         <input class="input-small" data-bind="value: allres, valueUpdate: 'afterkeydown'" />
       </td>
       <td>
+        <input class="input-small" data-bind="value: singleres, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
         <input class="input-small" data-bind="value: regen, valueUpdate: 'afterkeydown'" />
       </td>
       <td>
@@ -83,6 +87,7 @@
       <td data-bind="text: items.sum('intelligence')" />
       <td data-bind="text: items.sum('vitality')" />
       <td data-bind="text: items.sum('allres')" />
+      <td data-bind="text: items.sum('singleres')" />
       <td data-bind="text: items.sum('regen')" />
       <td data-bind="text: items.sum('mindmg')" />
       <td data-bind="text: items.sum('maxdmg')" />
@@ -273,6 +278,7 @@ function Item(slot, items) {
   this.intelligence = ko.observable(item.intelligence);
   this.vitality = ko.observable(item.vitality);
   this.allres = ko.observable(item.allres);
+  this.singleres = ko.observable(item.singleres);
   this.regen = ko.observable(item.regen);
   this.mindmg = ko.observable(item.mindmg);
   this.maxdmg = ko.observable(item.maxdmg);
@@ -517,8 +523,9 @@ function Character() {
 
   this.avgres = ko.computed(function() {
     var allres = this.items.sum('allres')() + this.intelligence() / 10;
+    var singleres = this.items.sum('singleres')() / 6;
     var skill = selectedSkills('resist');
-    return allres * (1 + skill / 100);
+    return (allres + singleres) * (1 + skill / 100);
   }, this);
 
   this.resreduct = ko.computed(function() {
