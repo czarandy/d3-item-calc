@@ -1,0 +1,9 @@
+.item-table {
+  table-layout: fixed;
+}
+.item-table input,
+.item-table select,
+.item-table td,
+.item-table th {
+  width: 90px;
+}
