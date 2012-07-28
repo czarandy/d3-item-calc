@@ -4,11 +4,12 @@
 <title>Diablo III Survivability Calculator</title>
 <script type="text/javascript" src="knockout-2.1.0.js"></script>
 <link type="text/css" href="bootstrap.min.css" rel="stylesheet" />
+<link type="text/css" href="style.css" rel="stylesheet" />
 </head>
 <body>
 <h1>Diablo III Item Calculator</h1>
 <h2>Items</h2>
-<table class="table table-striped table-bordered">
+<table class="table table-striped table-condensed table-bordered item-table">
   <thead>
     <tr>
       <th>Slot</th>
@@ -23,6 +24,7 @@
       <th>Max Damage</th>
       <th>Crit Chance</th>
       <th>Crit Amount</th>
+      <th>IAS</th>
     </tr>
   </thead>
   <tbody>
@@ -30,7 +32,13 @@
     <tr>
       <td data-bind="text: slot" />
       <td>
-        <input class="input-small" data-bind="value: armor, valueUpdate: 'afterkeydown'" />
+        <!-- ko if: $data instanceof Item -->
+          <input class="input-small" data-bind="value: armor, valueUpdate: 'afterkeydown'" />
+        <!-- /ko -->
+
+        <!-- ko if: $data instanceof Weapon -->
+          <select data-bind="options: weapons, value: wpn, optionsText : 'name'"></select>
+        <!-- /ko -->
       </td>
       <td>
         <input class="input-small" data-bind="value: strength, valueUpdate: 'afterkeydown'" />
@@ -62,6 +70,9 @@
       <td>
         <input class="input-small" data-bind="value: critamt, valueUpdate: 'afterkeydown'" />
       </td>
+      <td>
+        <input class="input-small" data-bind="value: ias, valueUpdate: 'afterkeydown'" />
+      </td>
     </tr>
     <!-- /ko -->
     <tr>
@@ -77,6 +88,7 @@
       <td data-bind="text: items.sum('maxdmg')" />
       <td data-bind="percent: items.sum('critchance')() / 100" />
       <td data-bind="percent: items.sum('critamt')() / 100" />
+      <td data-bind="percent: items.sum('ias')() / 100" />
     </tr>
   </tbody>
 </table>
@@ -87,7 +99,16 @@
     <tr>
       <th>Class</th>
       <td>
-        <select data-bind="options: classes, value: clss, optionsText: 'name'" />
+        <select data-bind="options: classes, value: clss, optionsText: 'name'"></select>
+      </td>
+    </tr>
+    <tr>
+      <th>Skills</th>
+      <td data-bind="foreach: $data.clss().skills">
+        <label class="checkbox">
+          <input type="checkbox" data-bind="checked: selected">
+          <span data-bind="text: name" />
+        </label>
       </td>
     </tr>
     <tr>
@@ -129,8 +150,12 @@
       <td data-bind="fixed: damage" />
     </tr>
     <tr>
-      <th>DPS (TODO)</th>
-      <td data-bind="fixed: damage" />
+      <th>Attacks/Sec</th>
+      <td data-bind="fixed: aps" />
+    </tr>
+    <tr>
+      <th>DPS</th>
+      <td data-bind="fixed: dps" />
     </tr>
     <tr>
       <th>Dodge</th>
@@ -138,7 +163,7 @@
     </tr>
     <tr>
       <th>Armor</th>
-      <td data-bind="text: armor" />
+      <td data-bind="fixed: armor" />
     </tr>
     <tr>
       <th>Damage Reduction</th>
@@ -146,7 +171,7 @@
     </tr>
     <tr>
       <th>Avg. Resistance</th>
-      <td data-bind="text: avgres" />
+      <td data-bind="fixed: avgres" />
     </tr>
     <tr>
       <th>Resistance DR</th>
@@ -238,6 +263,44 @@ function Item(slot, items) {
   this.maxdmg = ko.observable(item.maxdmg);
   this.critchance = ko.observable(item.critchance);
   this.critamt = ko.observable(item.critamt);
+  this.ias = ko.observable(item.ias);
+}
+
+function Weapon(slot, items) {
+  Item.call(this, slot, items);
+
+  this.weapons = [
+    {
+      name : 'Axe (1h)',
+      type : '1h',
+      speed: 1.3
+    },
+    {
+      name : 'Axe (2h)',
+      type : '2h',
+      speed : 1
+    },
+    {
+      name : 'Crossbow',
+      type : '2h',
+      speed : 1.1
+    }
+  ];
+  var wpn = this.weapons[0];
+  if (items) {
+    for (var i = 0; i < items.length; ++i) {
+      if (items[i].slot === slot) {
+        for (var j = 0; j < this.weapons.length; ++j) {
+          if (this.weapons[j].name === items[i].wpn.name) {
+            wpn = this.weapons[j];
+            break;
+          }
+        }
+        break;
+      }
+    }
+  }
+  this.wpn = ko.observable(wpn);
 }
 
 function Character() {
@@ -260,7 +323,31 @@ function Character() {
     },
     {
       name : 'Wizard',
-      primary : 'intelligence'
+      primary : 'intelligence',
+      skills : [
+        {
+          name : 'Glass Cannon',
+          damage : 15,
+          resist : -10,
+          armor : -10,
+          selected : ko.observable(false)
+        },
+        {
+          name : 'Magic Weapon',
+          damage : 10,
+          selected : ko.observable(false),
+        },
+        {
+          name : 'Magic Weapon (Force Weapon)',
+          damage : 15,
+          selected : ko.observable(false)
+        },
+        {
+          name : 'Familiar (Sparkflint)',
+          damage : 12,
+          selected : ko.observable(false)
+        }
+      ]
     }
   ];
 
@@ -271,6 +358,11 @@ function Character() {
     for (var i = 0; i < this.classes.length; ++i) {
       if (this.classes[i].name === saved_data.clss.name) {
         cur_class = this.classes[i];
+        for (var j = 0; j < saved_data.clss.skills.length; ++j) {
+          if (saved_data.clss.skills[j].selected) {
+            cur_class.skills[j].selected(true);
+          }
+        }
         break;
       }
     }
@@ -290,7 +382,8 @@ function Character() {
     new Item('Ring (L)', saved_data.items),
     new Item('Ring (R)', saved_data.items),
     new Item('Pants', saved_data.items),
-    new Item('Boots', saved_data.boots)
+    new Item('Boots', saved_data.items),
+    new Weapon('Weapon', saved_data.items)
   ]);
 
   function computeStat(stat) {
@@ -303,13 +396,23 @@ function Character() {
     return 7 + this.items.sum(stat)() + this.level() * multiplier;
   }
 
+  var selectedSkills = function(stat) {
+    var ret = 0;
+    for (var i = 0; i < this.clss().skills.length; ++i) {
+      if (this.clss().skills[i].selected()) {
+        ret += this.clss().skills[i][stat] || 0;
+      }
+    }
+    return ret;
+  }.bind(this);
+
   this.strength = ko.computed(computeStat.bind(this, 'strength'));
   this.dexterity = ko.computed(computeStat.bind(this, 'dexterity'));
   this.intelligence = ko.computed(computeStat.bind(this, 'intelligence'));
   this.vitality = ko.computed(computeStat.bind(this, 'vitality'));
 
   this.life = ko.computed(function() {
-    return 36 + 4 * this.level() + Math.max(10, this.level() - 10) * this.vitality();
+    return 36 + 4 * this.level() + Math.max(10, this.level() - 25) * this.vitality();
   }, this);
 
   this.critchance = ko.computed(function() {
@@ -324,11 +427,24 @@ function Character() {
     var stat = this[this.clss().primary]();
     var dmg = (this.items.sum('mindmg')() + this.items.sum('maxdmg')()) / 2;
     var crit = this.critamt() * this.critchance();
-    return dmg * (1 + crit) * (1 + stat / 100);
+    var skill = selectedSkills('damage');
+    return dmg * (1 + crit) * (1 + stat / 100) * (1 + skill / 100);
+  }, this);
+
+  this.aps = ko.computed(function() {
+    var speed = this.items()[11].wpn().speed;
+    var ias = this.items.sum('ias')();
+    return (1 + ias/100) * speed;
+  }, this);
+
+  this.dps = ko.computed(function() {
+    return this.damage() * this.aps();
   }, this);
 
   this.armor = ko.computed(function() {
-    return this.items.sum('armor')() + this.strength();
+    var armor = this.items.sum('armor')() + this.strength();
+    var skill = selectedSkills('armor');
+    return armor * (1 + skill / 100);
   }, this);
 
   this.dr = ko.computed(function() {
@@ -351,7 +467,9 @@ function Character() {
   }, this);
 
   this.avgres = ko.computed(function() {
-    return this.items.sum('allres')() + this.intelligence() / 10;
+    var allres = this.items.sum('allres')() + this.intelligence() / 10;
+    var skill = selectedSkills('resist');
+    return allres * (1 + skill / 100);
   }, this);
 
   this.resreduct = ko.computed(function() {
