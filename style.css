@@ -1,9 +1,24 @@
+body {
+  padding: 20px;
+}
+
 .item-table {
+  width: 700px;
   table-layout: fixed;
 }
-.item-table input,
-.item-table select,
+
+.char-table {
+  width: 400px;
+}
+
 .item-table td,
 .item-table th {
-  width: 90px;
+  padding: 2px;
+  text-align: center;
+  width: 75px;
+}
+
+.item-table input,
+.item-table select {
+  width: 70px;
 }

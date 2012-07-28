@@ -26,6 +26,7 @@
       <th>Crit Chance</th>
       <th>Crit Amount</th>
       <th>IAS</th>
+      <th>DPS</th>
     </tr>
   </thead>
   <tbody>
@@ -77,6 +78,7 @@
       <td>
         <input class="input-small" data-bind="value: ias, valueUpdate: 'afterkeydown'" />
       </td>
+      <td data-bind="percent: $parent.excludedps($index())" />
     </tr>
     <!-- /ko -->
     <tr>
@@ -94,12 +96,13 @@
       <td data-bind="percent: items.sum('critchance')() / 100" />
       <td data-bind="percent: items.sum('critamt')() / 100" />
       <td data-bind="percent: items.sum('ias')() / 100" />
+      <td />
     </tr>
   </tbody>
 </table>
 
 <h2>Character Sheet</h2>
-<table class="table table-striped table-bordered">
+<table class="table table-striped table-bordered char-table">
   <tbody>
     <tr>
       <th>Class</th>
@@ -261,7 +264,7 @@ ko.bindingHandlers.fixed = {
   }
 }
 
-function Item(slot, items) {
+function Item(slot, items, character) {
   var item = {};
   if (items) {
     for (var i = 0; i < items.length; ++i) {
@@ -287,8 +290,8 @@ function Item(slot, items) {
   this.ias = ko.observable(item.ias);
 }
 
-function Weapon(slot, items) {
-  Item.call(this, slot, items);
+function Weapon(slot, items, character) {
+  Item.call(this, slot, items, character);
 
   this.weapons = [
     {
@@ -324,7 +327,7 @@ function Weapon(slot, items) {
   this.wpn = ko.observable(wpn);
 }
 
-function Character() {
+function Character(saved_data) {
   this.classes = [
     {
       name : 'Barbarian',
@@ -385,7 +388,6 @@ function Character() {
     }
   ];
 
-  var saved_data = JSON.parse(localStorage.getItem('d3_data')) || {};
 
   var cur_class = this.classes[0];
   if (saved_data.clss) {
@@ -422,18 +424,18 @@ function Character() {
   this.level = ko.observable(saved_data.level || 60);
 
   this.items = ko.observableArray([
-    new Item('Helm', saved_data.items),
-    new Item('Shoulders', saved_data.items),
-    new Item('Amulet', saved_data.items),
-    new Item('Chest', saved_data.items),
-    new Item('Gloves', saved_data.items),
-    new Item('Bracers', saved_data.items),
-    new Item('Belt', saved_data.items),
-    new Item('Ring (L)', saved_data.items),
-    new Item('Ring (R)', saved_data.items),
-    new Item('Pants', saved_data.items),
-    new Item('Boots', saved_data.items),
-    new Weapon('Weapon', saved_data.items)
+    new Item('Helm', saved_data.items, this),
+    new Item('Shoulders', saved_data.items, this),
+    new Item('Amulet', saved_data.items, this),
+    new Item('Chest', saved_data.items, this),
+    new Item('Gloves', saved_data.items, this),
+    new Item('Bracers', saved_data.items, this),
+    new Item('Belt', saved_data.items, this),
+    new Item('Ring (L)', saved_data.items, this),
+    new Item('Ring (R)', saved_data.items, this),
+    new Item('Pants', saved_data.items, this),
+    new Item('Boots', saved_data.items, this),
+    new Weapon('Weapon', saved_data.items, this)
   ]);
 
   function computeStat(stat) {
@@ -495,6 +497,32 @@ function Character() {
   this.dps = ko.computed(function() {
     return this.damage() * this.aps();
   }, this);
+
+  this.excludedps = function(i) {
+    // Recompute dps excluding item i
+    var speed = 1;
+    if (i !== 11) {
+      speed = this.items()[11].wpn().speed;
+    }
+    var ias = this.items.sum('ias')();
+    ias -= this.items()[i].ias() || 0;
+    var aps = (1 + ias/100) * speed;
+    var stat = this[this.clss().primary]() - (this.items()[i][this.clss().primary]() || 0);
+    var dmg = this.items.sum('mindmg')() + this.items.sum('maxdmg')();
+    dmg -= this.items()[i].mindmg() || 0;
+    dmg -= this.items()[i].maxdmg() || 0;
+    dmg /= 2;
+    var skill = selectedSkills('damage');
+    var crit = 5 + this.items.sum('critchance')() - (this.items()[i].critchance() || 0) + selectedSkills('crit');
+    crit /= 100;
+    crit *= (50 + this.items.sum('critamt')() - (this.items()[i].critamt() || 0)) / 100;
+    var mod_dps = aps * dmg * (1 + crit) * (1 + stat / 100) * (1 + skill / 100);
+    var dps = this.dps();
+    console.log(this.items()[i].slot);
+    console.log(dps);
+    console.log(mod_dps);
+    return (dps - mod_dps) / dps;
+  }.bind(this);
 
   this.armor = ko.computed(function() {
     var armor = this.items.sum('armor')() + this.strength();
@@ -573,7 +601,8 @@ function Character() {
     }.bind(this), 1);
   }.bind(this));
 };
-ko.applyBindings(new Character());
+var saved_data = JSON.parse(localStorage.getItem('d3_data')) || {};
+ko.applyBindings(new Character(saved_data));
 </script>
 </body>
 </html>
