@@ -370,6 +370,17 @@ function Character(saved_data) {
           name : 'Familiar (Sparkflint)',
           damage : 12,
           selected : ko.observable(false)
+        },
+        {
+          name : 'Energy Armor',
+          armor : 65,
+          selected : ko.observable(false)
+        },
+        {
+          name : 'Energy Armor (Prismatic Armor)',
+          armor : 65,
+          resist: 40,
+          selected : ko.observable(false)
         }
       ]
     }
@@ -518,10 +529,7 @@ function Character(saved_data) {
     crit *= (50 + this.items.sum('critamt')() - (this.items()[i].critamt() || 0)) / 100;
     var mod_dps = aps * dmg * (1 + crit) * (1 + stat / 100) * (1 + skill / 100);
     var dps = this.dps();
-    console.log(this.items()[i].slot);
-    console.log(dps);
-    console.log(mod_dps);
-    return (dps - mod_dps) / dps;
+    return Math.max(0, (dps - mod_dps) / dps);
   }.bind(this);
 
   this.armor = ko.computed(function() {
