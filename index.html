@@ -162,11 +162,11 @@
     </tr>
     <tr>
       <th>Critical Chance</th>
-      <td data-bind="percent: critchance" />
+      <td data-bind="percent: critchance, digits: 0" />
     </tr>
     <tr>
       <th>Critical Amount</th>
-      <td data-bind="percent: critamt" />
+      <td data-bind="percent: critamt, digits: 0" />
     </tr>
     <tr>
       <th>Damage</th>
@@ -174,11 +174,11 @@
     </tr>
     <tr>
       <th>Attacks/Sec</th>
-      <td data-bind="fixed: aps" />
+      <td data-bind="fixed: aps, digits: 2" />
     </tr>
     <tr>
       <th>DPS</th>
-      <td data-bind="fixed: dps" />
+      <td data-bind="fixed: dps, digits: 0" />
     </tr>
     <tr>
       <th>Dodge</th>
@@ -186,7 +186,7 @@
     </tr>
     <tr>
       <th>Armor</th>
-      <td data-bind="fixed: armor" />
+      <td data-bind="fixed: armor, digits: 0" />
     </tr>
     <tr>
       <th>Damage Reduction</th>
@@ -194,7 +194,7 @@
     </tr>
     <tr>
       <th>Avg. Resistance</th>
-      <td data-bind="fixed: avgres" />
+      <td data-bind="fixed: avgres, digits: 0" />
     </tr>
     <tr>
       <th>Resistance DR</th>
@@ -238,27 +238,45 @@ function coalesce() {
 }
 
 var Formula = {
-  life : function(level, vitality) {
+  stat : function(stat, c, ei) {
+    var multiplier = 1;
+    if (stat === 'vitality') {
+      multiplier = 2;
+    } else if (stat === c.clss().primary) {
+      multiplier = 3;
+    }
+    return 7 + c.level() * multiplier + c.getItemStat(stat, ei);
+  },
+  life : function(c) {
+    var level = +c.level(),
+        vitality = +c.vitality();
     return 36 + 4 + level + Math.max(10, level - 25) * vitality;
   },
-  criticalChance : function(item_chance, skill_chance) {
+  criticalChance : function(c, ei) {
+    var item_chance = c.getItemStat('critchance', ei),
+        skill_chance = c.getSkillStat('crit', ei);
     return (5 + item_chance + skill_chance) / 100;
   },
-  criticalAmount : function(item_amount) {
+  criticalAmount : function(c, ei) {
+    var item_amount = c.getItemStat('critamt', ei);
     return (50 + item_amount) / 100;
   },
-  criticalDamage : function(item_chance, skill_chance, item_amount) {
-    return this.criticalChance(item_chance, skill_chance) * this.criticalAmount(item_amount);
+  criticalDamage : function(c, ei) {
+    return this.criticalChance(c, ei) * this.criticalAmount(c, ei);
   },
-  attacksPerSecond : function(weapon_speed, ias) {
+  attacksPerSecond : function(c, ei) {
+    var weapon_speed = ei == 11 ? 1 : c.items()[11].wpn().speed,
+        ias = c.getItemStat('ias', ei);
     return (1 + ias/100) * weapon_speed;
   },
-  damage : function(primary_stat, weapon_damage, item_crit_chance, skill_crit_chance, item_crit_amt, skill_damage) {
-    return
-      (weapon_damage / 2)
-      * this.criticalDamage(item_crit_chance, skill_crit_chance, item_crit_amt)
-      * (1 + primary_stat / 100)
-      * (1 + skill_damage / 100);
+  damage : function(c, ei) {
+    var weapon_damage = Math.max(4, c.getItemStat('mindmg', ei) + c.getItemStat('maxdmg', ei)),
+        primary_stat = this.stat(c.clss().primary, c, ei),
+        skill_damage = c.getSkillStat('damage');
+    return (weapon_damage / 2) * (1 + this.criticalDamage(c)) * (1 + primary_stat / 100) * (1 + skill_damage / 100);
+  },
+  dps : function(c, ei) {
+    return this.damage(c, ei) * this.attacksPerSecond(c, ei);
   }
 };
 
@@ -482,17 +500,7 @@ function Character(saved_data) {
     new Weapon('Weapon', saved_data.items, this)
   ]);
 
-  function computeStat(stat) {
-    var multiplier = 1;
-    if (stat === 'vitality') {
-      multiplier = 2;
-    } else if (stat === this.clss().primary) {
-      multiplier = 3;
-    }
-    return 7 + this.items.sum(stat)() + this.level() * multiplier;
-  }
-
-  var selectedSkills = function(stat) {
+  this.getSkillStat = function(stat) {
     function helper(skills) {
       var ret = 0;
       for (var i = 0; i < skills.length; ++i) {
@@ -505,68 +513,63 @@ function Character(saved_data) {
     return helper(this.clss().skills) + helper(this.follower().skills);
   }.bind(this);
 
-  this.strength = ko.computed(computeStat.bind(this, 'strength'));
-  this.dexterity = ko.computed(computeStat.bind(this, 'dexterity'));
-  this.intelligence = ko.computed(computeStat.bind(this, 'intelligence'));
-  this.vitality = ko.computed(computeStat.bind(this, 'vitality'));
+  this.getItemStat = function(stat, exclude_item, additional_item) {
+    var val = this.items.sum(stat)();
+    if (exclude_item !== undefined) {
+      val -= this.items()[exclude_item][stat]() || 0;
+    }
+    if (additional_item) {
+      console.warn('Not supported yet ', additional_item);
+    }
+    return val;
+  }.bind(this);
+
+  this.strength = ko.computed(function() {
+    return Formula.stat('strength', this);
+  }, this);
+  this.dexterity = ko.computed(function() {
+    return Formula.stat('dexterity', this);
+  }, this);
+  this.intelligence = ko.computed(function() {
+    return Formula.stat('intelligence', this);
+  }, this);
+  this.vitality = ko.computed(function() {
+    return Formula.stat('vitality', this);
+  }, this);
 
   this.life = ko.computed(function() {
-    return Formula.life(+this.level(), +this.vitality());
+    return Formula.life(this);
   }, this);
 
   this.critchance = ko.computed(function() {
-    return Formula.criticalChance(this.items.sum('critchance')(), selectedSkills('crit'));
+    return Formula.criticalChance(this);
   }, this);
 
   this.critamt = ko.computed(function() {
-    return Formula.criticalAmount(this.items.sum('critamt')());
+    return Formula.criticalAmount(this);
   }, this);
 
   this.damage = ko.computed(function() {
-    return Formula.damage(
-      this[this.clss().primary](),
-      this.items.sum('mindmg')() + this.items.sum('maxdmg')(),
-      this.items.sum('critchance')(),
-      selectedSkills('crit'),
-      this.items.sum('critamt')(),
-      selectedSkills('damage')
-    );
+    return Formula.damage(this);
   }, this);
 
   this.aps = ko.computed(function() {
-    return Formula.attacksPerSecond(this.items()[11].wpn().speed, this.items.sum('ias')());
+    return Formula.attacksPerSecond(this);
   }, this);
 
   this.dps = ko.computed(function() {
-    return this.damage() * this.aps();
+    return Formula.dps(this);
   }, this);
 
   this.excludedps = function(i) {
-    // Recompute dps excluding item i
-    var speed = 1;
-    if (i !== 11) {
-      speed = this.items()[11].wpn().speed;
-    }
-    var ias = this.items.sum('ias')();
-    ias -= this.items()[i].ias() || 0;
-    var aps = (1 + ias/100) * speed;
-    var stat = this[this.clss().primary]() - (this.items()[i][this.clss().primary]() || 0);
-    var dmg = this.items.sum('mindmg')() + this.items.sum('maxdmg')();
-    dmg -= this.items()[i].mindmg() || 0;
-    dmg -= this.items()[i].maxdmg() || 0;
-    dmg /= 2;
-    var skill = selectedSkills('damage');
-    var crit = 5 + this.items.sum('critchance')() - (this.items()[i].critchance() || 0) + selectedSkills('crit');
-    crit /= 100;
-    crit *= (50 + this.items.sum('critamt')() - (this.items()[i].critamt() || 0)) / 100;
-    var mod_dps = aps * dmg * (1 + crit) * (1 + stat / 100) * (1 + skill / 100);
-    var dps = this.dps();
-    return Math.max(0, (dps - mod_dps) / dps);
+    var dps = Formula.dps(this),
+        excluded_dps = Formula.dps(this, i);
+    return Math.max(0, (dps - excluded_dps) / dps);
   }.bind(this);
 
   this.armor = ko.computed(function() {
     var armor = this.items.sum('armor')() + this.strength();
-    var skill = selectedSkills('armor');
+    var skill = this.getSkillStat('armor');
     return armor * (1 + skill / 100);
   }, this);
 
@@ -592,7 +595,7 @@ function Character(saved_data) {
   this.avgres = ko.computed(function() {
     var allres = this.items.sum('allres')() + this.intelligence() / 10;
     var singleres = this.items.sum('singleres')() / 6;
-    var skill = selectedSkills('resist');
+    var skill = this.getSkillStat('resist');
     return (allres + singleres) * (1 + skill / 100);
   }, this);
 
