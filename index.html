@@ -3,6 +3,7 @@
 <head>
 <title>Diablo III Survivability Calculator</title>
 <script type="text/javascript" src="knockout-2.1.0.js"></script>
+<script type="text/javascript" src="underscore-1.3.3.js"></script>
 <link type="text/css" href="bootstrap.min.css" rel="stylesheet" />
 <link type="text/css" href="style.css" rel="stylesheet" />
 </head>
@@ -20,7 +21,6 @@
       <th>Vitality</th>
       <th>All Res</th>
       <th>Single Res</th>
-      <th>Life Regen</th>
       <th>Min Damage</th>
       <th>Max Damage</th>
       <th>Crit Chance</th>
@@ -61,9 +61,6 @@
         <input class="input-small" data-bind="value: singleres, valueUpdate: 'afterkeydown'" />
       </td>
       <td>
-        <input class="input-small" data-bind="value: regen, valueUpdate: 'afterkeydown'" />
-      </td>
-      <td>
         <input class="input-small" data-bind="value: mindmg, valueUpdate: 'afterkeydown'" />
       </td>
       <td>
@@ -90,7 +87,6 @@
       <td data-bind="text: items.sum('vitality')" />
       <td data-bind="text: items.sum('allres')" />
       <td data-bind="text: items.sum('singleres')" />
-      <td data-bind="text: items.sum('regen')" />
       <td data-bind="text: items.sum('mindmg')" />
       <td data-bind="text: items.sum('maxdmg')" />
       <td data-bind="percent: items.sum('critchance')() / 100" />
@@ -203,24 +199,6 @@
   </tbody>
 </table>
 
-<h2>Survivability</h2>
-<table class="table table-striped table-bordered">
-  <tbody>
-    <tr>
-      <th>Effective HP</th>
-      <td data-bind="floor: ehp" />
-    </tr>
-    <tr>
-    digits)<th>Effective HP (w/ Dodge)</th>
-      <td data-bind="floor: ehpdodge" />
-    </tr>
-    <tr>
-      <th>Survivable Damage (10 sec)</th>
-      <td data-bind="floor: survive10" />
-    </tr>
-  </tbody>
-</table>
-
 <h2>Item Contribution</h2>
 <table class="table table-striped table-bordered">
 </table>
@@ -249,17 +227,20 @@ var Formula = {
   },
   life : function(c) {
     var level = +c.level(),
-        vitality = +c.vitality();
-    return 36 + 4 + level + Math.max(10, level - 25) * vitality;
+        vitality = +c.vitality(),
+        skill = c.getSkillStat('life');
+    var base = 36 + 4 + level + Math.max(10, level - 25) * vitality;
+    return base * (1 + skill / 100);
   },
   criticalChance : function(c, ei) {
     var item_chance = c.getItemStat('critchance', ei),
-        skill_chance = c.getSkillStat('crit', ei);
+        skill_chance = c.getSkillStat('crit');
     return (5 + item_chance + skill_chance) / 100;
   },
   criticalAmount : function(c, ei) {
-    var item_amount = c.getItemStat('critamt', ei);
-    return (50 + item_amount) / 100;
+    var item_amount = c.getItemStat('critamt', ei),
+        skill_amount = c.getSkillStat('critamt');
+    return (50 + item_amount + skill_amount) / 100;
   },
   criticalDamage : function(c, ei) {
     return this.criticalChance(c, ei) * this.criticalAmount(c, ei);
@@ -277,13 +258,45 @@ var Formula = {
   },
   dps : function(c, ei) {
     return this.damage(c, ei) * this.attacksPerSecond(c, ei);
+  },
+  armor : function(c, ei) {
+    var item = c.getItemStat('armor', ei),
+        str = this.stat('strength', c, ei),
+        skill = c.getSkillStat('armor');
+    if (c.getSkillStat('vitarmor')) {
+      str += this.stat('vitality', c, ei);
+    }
+    return (item + str) * (1 + skill / 100);
+  },
+  dodge : function(c, ei) {
+    var dex = this.stat('dexterity', c, ei),
+        skill = c.getSkillStat('dodge') / 100;
+    if (dex <= 100) {
+      return skill + dex * 0.001;
+    }
+    if (dex <= 500) {
+      return skill + 0.1 + (dex - 100) * 0.00025;
+    }
+    if (dex <= 1000) {
+      return skill + 0.2 + (dex - 500) * 0.0002;
+    }
+    return Math.min(skill + 0.3 + (dex - 1000) * 0.0001, 1);
+  },
+  avgres : function(c, ei) {
+    var allres = c.getItemStat('allres'),
+        int_res = this.stat('intelligence', c, ei) / 10,
+        singleres = c.getItemStat('singleres') / 6,
+        skill = c.getSkillStat('resist');
+    return (allres + singleres + int_res) * (1 + skill / 100);
   }
 };
 
 ko.observableArray.fn.sum = function(key) {
   return ko.computed(function() {
-    return this().map(function(x) { return x[key]() | 0; })
-                 .reduce(function(a, b) { return a + b; });
+    return _.chain(this())
+            .map(function(x) { return x[key]() | 0; })
+            .reduce(function(a, b) { return a + b; }, 0)
+            .value();
   }, this);
 }
 
@@ -333,7 +346,6 @@ function Item(slot, items, character) {
   this.vitality = ko.observable(item.vitality);
   this.allres = ko.observable(item.allres);
   this.singleres = ko.observable(item.singleres);
-  this.regen = ko.observable(item.regen);
   this.mindmg = ko.observable(item.mindmg);
   this.maxdmg = ko.observable(item.maxdmg);
   this.critchance = ko.observable(item.critchance);
@@ -378,61 +390,53 @@ function Weapon(slot, items, character) {
   this.wpn = ko.observable(wpn);
 }
 
+function Skill(name, values) {
+  this.name = name;
+  _.extend(this, values);
+  this.selected = ko.observable(false);
+}
+
 function Character(saved_data) {
   this.classes = [
     {
       name : 'Barbarian',
-      primary : 'strength'
+      primary : 'strength',
+      skills : [
+        new Skill('Ruthless', { crit : 5, critamt : 50 }),
+        new Skill('Nerves of Steel', { vitarmor : 1}),
+        new Skill('Tough as Nails', { armor : 25}),
+        new Skill('War Cry', { armor : 20 }),
+        new Skill('War Cry (Hardened Wrath)', { armor : 40 }),
+        new Skill('War Cry (Invigorate)', { armor : 20, life : 10 }),
+        new Skill('War Cry (Veteran\'s Warning)', { armor : 20, dodge: 15 }),
+        new Skill('War Cry (Impunity)', { armor : 20, resist : 50 })
+      ]
     },
     {
       name : 'Demon Hunter',
-      primary : 'dexterity'
+      primary : 'dexterity',
+      skills : []
     },
     {
       name : 'Monk',
-      primary : 'dexterity'
+      primary : 'dexterity',
+      skills : []
     },
     {
       name : 'Witch Doctor',
-      primary : 'intelligence'
+      primary : 'intelligence',
+      skills : []
     },
     {
       name : 'Wizard',
       primary : 'intelligence',
       skills : [
-        {
-          name : 'Glass Cannon',
-          damage : 15,
-          resist : -10,
-          armor : -10,
-          selected : ko.observable(false)
-        },
-        {
-          name : 'Magic Weapon',
-          damage : 10,
-          selected : ko.observable(false),
-        },
-        {
-          name : 'Magic Weapon (Force Weapon)',
-          damage : 15,
-          selected : ko.observable(false)
-        },
-        {
-          name : 'Familiar (Sparkflint)',
-          damage : 12,
-          selected : ko.observable(false)
-        },
-        {
-          name : 'Energy Armor',
-          armor : 65,
-          selected : ko.observable(false)
-        },
-        {
-          name : 'Energy Armor (Prismatic Armor)',
-          armor : 65,
-          resist: 40,
-          selected : ko.observable(false)
-        }
+        new Skill('Glass Cannon', { damage : 15, resist : -10, armor : -10 }),
+        new Skill('Magic Weapon', { damage : 10 }),
+        new Skill('Magic Weapon (Force Weapon)', { damage : 15 }),
+        new Skill('Familiar (Sparkflint)', { damage : 12 }),
+        new Skill('Energy Armor', { armor : 65 }),
+        new Skill('Energy Armor (Prismatic Armor)', { armor : 65, resist: 40 })
       ]
     }
   ];
@@ -441,11 +445,7 @@ function Character(saved_data) {
     {
       name : 'Scoundrel',
       skills : [
-        {
-          name : 'Anatomy',
-          crit : 3,
-          selected : ko.observable(false)
-        }
+        new Skill('Anatomy', { crit : 3 })
       ]
     }
   ];
@@ -568,9 +568,7 @@ function Character(saved_data) {
   }.bind(this);
 
   this.armor = ko.computed(function() {
-    var armor = this.items.sum('armor')() + this.strength();
-    var skill = this.getSkillStat('armor');
-    return armor * (1 + skill / 100);
+    return Formula.armor(this);
   }, this);
 
   this.dr = ko.computed(function() {
@@ -579,24 +577,11 @@ function Character(saved_data) {
   }, this);
 
   this.dodge = ko.computed(function() {
-    var dex = this.dexterity();
-    if (dex <= 100) {
-      return dex * 0.001;
-    }
-    if (dex <= 500) {
-      return 0.1 + (dex - 100) * 0.00025;
-    }
-    if (dex <= 1000) {
-      return 0.2 + (dex - 500) * 0.0002;
-    }
-    return Math.min(0.3 + (dex - 1000) * 0.0001, 1);
+    return Formula.dodge(this);
   }, this);
 
   this.avgres = ko.computed(function() {
-    var allres = this.items.sum('allres')() + this.intelligence() / 10;
-    var singleres = this.items.sum('singleres')() / 6;
-    var skill = this.getSkillStat('resist');
-    return (allres + singleres) * (1 + skill / 100);
+    return Formula.avgres(this);
   }, this);
 
   this.resreduct = ko.computed(function() {
@@ -618,13 +603,6 @@ function Character(saved_data) {
 
   this.ehpdodge = ko.computed(function() {
     return this.life() / total_reduct(true);
-  }, this);
-
-  this.survive10 = ko.computed(function() {
-    var life_gain = this.items.sum('regen')(); // TODO: lph
-    var dr = total_reduct(true);
-    var life = this.life() + life_gain * 10;
-    return (life / dr) / 10;
   }, this);
 
   // Save data to local storage when anything changes. This is somewhat
