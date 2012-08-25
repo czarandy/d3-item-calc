@@ -123,6 +123,12 @@
       </td>
     </tr>
     <tr>
+      <th>Paragon Level</th>
+      <td>
+        <input class="input-small" data-bind="value: paragon, valueUpdate: 'afterkeydown'" />
+      </td>
+    </tr>
+    <tr>
       <th>Skills</th>
       <td data-bind="foreach: $data.clss().skills">
         <label class="checkbox">
@@ -243,14 +249,16 @@ var Formula = {
     } else if (stat === c.clss().primary) {
       multiplier = 3;
     }
-    return 7 + c.level() * multiplier + c.getItemStat(stat, ei);
+    var level = +c.level(),
+        paragon = +c.paragon();
+    return 7 + (level + paragon) * multiplier + c.getItemStat(stat, ei);
   },
   life : function(c) {
     var level = +c.level(),
         vitality = +c.vitality(),
         skill = c.getSkillStat('life'),
         life = c.getItemStat('life');
-    var base = 36 + 4 + level + Math.max(10, level - 25) * vitality;
+    var base = 36 + (4 * level) + Math.max(10, level - 25) * vitality;
     return base * (1 + (life + skill) / 100);
   },
   criticalChance : function(c, ei) {
@@ -268,8 +276,9 @@ var Formula = {
   },
   attacksPerSecond : function(c, ei) {
     var weapon_speed = ei == 11 ? 1 : c.items()[11].wpn().speed,
-        ias = c.getItemStat('ias', ei);
-    return (1 + ias/100) * weapon_speed;
+        ias = c.getItemStat('ias', ei),
+        ias_skill = c.getSkillStat('ias');
+    return ((ias + ias_skill) / 100) + weapon_speed;
   },
   damage : function(c, ei) {
     var weapon_damage = Math.max(4, c.getItemStat('mindmg', ei) + c.getItemStat('maxdmg', ei)),
@@ -474,6 +483,13 @@ function Character(saved_data) {
       skills : [
         new Skill('Anatomy', { crit : 3 })
       ]
+    },
+    {
+      name : 'Enchantress',
+      skills : [
+        new Skill('Powered Armor', { armor : 15 }),
+        new Skill('Focused Mind', { ias : 3 })
+      ]
     }
   ];
 
@@ -511,6 +527,7 @@ function Character(saved_data) {
   this.follower = ko.observable(cur_follower);
 
   this.level = ko.observable(saved_data.level || 60);
+  this.paragon = ko.observable(saved_data.paragon || 0);
 
   this.items = ko.observableArray([
     new Item('Helm', saved_data.items, this),
