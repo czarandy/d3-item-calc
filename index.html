@@ -28,6 +28,7 @@
       <th>Crit Amount</th>
       <th>IAS</th>
       <th>DPS</th>
+      <th>EHP</th>
     </tr>
   </thead>
   <tbody>
@@ -80,6 +81,7 @@
         <input class="input-small" data-bind="value: ias, valueUpdate: 'afterkeydown'" />
       </td>
       <td data-bind="percent: $parent.excludedps($index()), digits: 0" />
+      <td data-bind="percent: $parent.excludeehp($index()), digits: 0" />
     </tr>
     <!-- /ko -->
     <tr>
@@ -97,6 +99,7 @@
       <td data-bind="percent: items.sum('critchance')() / 100, digits: 0" />
       <td data-bind="percent: items.sum('critamt')() / 100, digits: 0" />
       <td data-bind="percent: items.sum('ias')() / 100, digits: 0" />
+      <td />
       <td />
     </tr>
   </tbody>
@@ -253,11 +256,11 @@ var Formula = {
         paragon = +c.paragon();
     return 7 + (level + paragon) * multiplier + c.getItemStat(stat, ei);
   },
-  life : function(c) {
+  life : function(c, ei) {
     var level = +c.level(),
         vitality = +c.vitality(),
         skill = c.getSkillStat('life'),
-        life = c.getItemStat('life');
+        life = c.getItemStat('life', ei);
     var base = 36 + (4 * level) + Math.max(10, level - 25) * vitality;
     return base * (1 + (life + skill) / 100);
   },
@@ -300,17 +303,17 @@ var Formula = {
   },
   dodge : function(c, ei) {
     var dex = this.stat('dexterity', c, ei),
-        skill = c.getSkillStat('dodge') / 100;
+        dodge = 1 - c.getSkillStat('dodge') / 100;
     if (dex <= 100) {
-      return skill + dex * 0.001;
+      dodge *= (1 - dex * 0.001);
+    } else if (dex <= 500) {
+      dodge *= 1 - (0.1 + (dex - 100) * 0.00025);
+    } else if (dex <= 1000) {
+      dodge *= 1 - ( 0.2 + (dex - 500) * 0.0002);
+    } else {
+      dodge *= (1 - Math.min(skill + 0.3 + (dex - 1000) * 0.0001, 1));
     }
-    if (dex <= 500) {
-      return skill + 0.1 + (dex - 100) * 0.00025;
-    }
-    if (dex <= 1000) {
-      return skill + 0.2 + (dex - 500) * 0.0002;
-    }
-    return Math.min(skill + 0.3 + (dex - 1000) * 0.0001, 1);
+    return 1 - dodge;
   },
   avgres : function(c, ei) {
     var allres = c.getItemStat('allres'),
@@ -318,6 +321,30 @@ var Formula = {
         singleres = c.getItemStat('singleres') / 6,
         skill = c.getSkillStat('resist');
     return (allres + singleres + int_res) * (1 + skill / 100);
+  },
+  resreduct : function(c, ei) {
+    var res = this.avgres(c, ei);
+    return res / (5 * c.level() + res);
+  },
+  dr : function(c, ei) {
+    var armor = this.armor(c, ei);
+    return armor / (50 * c.level() + armor);
+  },
+  totalreduct : function(c, ei) {
+    return (1 - this.resreduct(c, ei)) * (1 - this.dr(c, ei));
+  },
+  totalreductdodge : function(c, ei) {
+    return this.totalreduct(c, ei) * (1 - this.dodge(c, ei));
+  },
+  ehp : function(c, ei) {
+    var life = this.life(c, ei),
+        total_reduct = this.totalreduct(c, ei);
+    return life / total_reduct;
+  },
+  ehpdodge : function(c, ei) {
+    var life = this.life(c, ei),
+        total_reduct = this.totalreductdodge(c, ei);
+    return life / total_reduct;
   }
 };
 
@@ -616,8 +643,7 @@ function Character(saved_data) {
   }, this);
 
   this.dr = ko.computed(function() {
-    // Assumes monsters same level
-    return this.armor() / (50 * this.level() + this.armor());
+    return Formula.dr(this);
   }, this);
 
   this.dodge = ko.computed(function() {
@@ -629,25 +655,22 @@ function Character(saved_data) {
   }, this);
 
   this.resreduct = ko.computed(function() {
-    var res = this.avgres();
-    return res / (5 * this.level() + res);
+    return Formula.resreduct(this);
   }, this);
 
-  var total_reduct = function(dodge) {
-    var dr = (1 - this.resreduct()) * (1 - this.dr());
-    if (dodge) {
-      dr *= (1 - this.dodge());
-    }
-    return dr;
-  }.bind(this);
-
   this.ehp = ko.computed(function() {
-    return this.life() / total_reduct();
+    return Formula.ehp(this);
   }, this);
 
   this.ehpdodge = ko.computed(function() {
-    return this.life() / total_reduct(true);
+    return Formula.ehpdodge(this);
   }, this);
+
+  this.excludeehp = function(i) {
+    var ehp = Formula.ehpdodge(this),
+        excluded_ehp = Formula.ehpdodge(this, i);
+    return Math.max(0, (ehp - excluded_ehp) / ehp);
+  }.bind(this);
 
   // Save data to local storage when anything changes. This is somewhat
   // roundabout because we have to:
