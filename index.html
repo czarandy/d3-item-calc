@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>Diablo III Survivability Calculator</title>
+<title>Diablo III Item Calculator</title>
 <script type="text/javascript" src="knockout-2.1.0.js"></script>
 <script type="text/javascript" src="underscore-1.3.3.js"></script>
 <link type="text/css" href="bootstrap.min.css" rel="stylesheet" />
@@ -19,6 +19,7 @@
       <th>Dexterity</th>
       <th>Intelligence</th>
       <th>Vitality</th>
+      <th>Life %</th>
       <th>All Res</th>
       <th>Single Res</th>
       <th>Min Damage</th>
@@ -55,6 +56,9 @@
         <input class="input-small" data-bind="value: vitality, valueUpdate: 'afterkeydown'" />
       </td>
       <td>
+        <input class="input-small" data-bind="value: life, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
         <input class="input-small" data-bind="value: allres, valueUpdate: 'afterkeydown'" />
       </td>
       <td>
@@ -85,17 +89,23 @@
       <td data-bind="text: items.sum('dexterity')" />
       <td data-bind="text: items.sum('intelligence')" />
       <td data-bind="text: items.sum('vitality')" />
+      <td data-bind="percent: items.sum('life')() / 100, digits: 0" />
       <td data-bind="text: items.sum('allres')" />
       <td data-bind="text: items.sum('singleres')" />
       <td data-bind="text: items.sum('mindmg')" />
       <td data-bind="text: items.sum('maxdmg')" />
-      <td data-bind="percent: items.sum('critchance')() / 100" />
-      <td data-bind="percent: items.sum('critamt')() / 100" />
-      <td data-bind="percent: items.sum('ias')() / 100" />
+      <td data-bind="percent: items.sum('critchance')() / 100, digits: 0" />
+      <td data-bind="percent: items.sum('critamt')() / 100, digits: 0" />
+      <td data-bind="percent: items.sum('ias')() / 100, digits: 0" />
       <td />
     </tr>
   </tbody>
 </table>
+
+<h2>Item Comparison</h2>
+<table class="table table-striped table-bordered">
+</table>
+
 
 <h2>Character Sheet</h2>
 <table class="table table-striped table-bordered char-table">
@@ -104,6 +114,12 @@
       <th>Class</th>
       <td>
         <select data-bind="options: classes, value: clss, optionsText: 'name'"></select>
+      </td>
+    </tr>
+    <tr>
+      <th>Level</th>
+      <td>
+        <input class="input-small" data-bind="value: level, valueUpdate: 'afterkeydown'" />
       </td>
     </tr>
     <tr>
@@ -130,51 +146,21 @@
         </label>
       </td>
     </tr>
+  </tbody>
+</table>
+<table class="table table-striped table-bordered char-table">
+  <tbody>
     <tr>
-      <th>Level</th>
-      <td>
-        <input class="input-small" data-bind="value: level, valueUpdate: 'afterkeydown'" />
-      </td>
+      <th>Effective HP (w/ Dodge)</th>
+      <td data-bind="fixed: ehpdodge, digits: 0" />
     </tr>
     <tr>
-      <th>Strength</th>
-      <td data-bind="text: strength" />
-    </tr>
-    <tr>
-      <th>Dexterity</th>
-      <td data-bind="text: dexterity" />
-    </tr>
-    <tr>
-      <th>Intelligence</th>
-      <td data-bind="text: intelligence" />
-    </tr>
-    <tr>
-      <th>Vitality</th>
-      <td data-bind="text: vitality" />
+      <th>Effective HP (w/o Dodge)</th>
+      <td data-bind="fixed: ehp, digits: 0" />
     </tr>
     <tr>
       <th>Life</th>
-      <td data-bind="text: life" />
-    </tr>
-    <tr>
-      <th>Critical Chance</th>
-      <td data-bind="percent: critchance, digits: 0" />
-    </tr>
-    <tr>
-      <th>Critical Amount</th>
-      <td data-bind="percent: critamt, digits: 0" />
-    </tr>
-    <tr>
-      <th>Damage</th>
-      <td data-bind="fixed: damage, digits: 0" />
-    </tr>
-    <tr>
-      <th>Attacks/Sec</th>
-      <td data-bind="fixed: aps, digits: 2" />
-    </tr>
-    <tr>
-      <th>DPS</th>
-      <td data-bind="fixed: dps, digits: 0" />
+      <td data-bind="fixed: life, digits: 0" />
     </tr>
     <tr>
       <th>Dodge</th>
@@ -196,14 +182,48 @@
       <th>Resistance DR</th>
       <td data-bind="percent: resreduct" />
     </tr>
+    <tr>
+      <th>Vitality</th>
+      <td data-bind="text: vitality" />
+    </tr>
   </tbody>
 </table>
-
-<h2>Item Contribution</h2>
-<table class="table table-striped table-bordered">
+<table class="table table-striped table-bordered char-table">
+  <tbody>
+    <tr>
+      <th>DPS</th>
+      <td data-bind="fixed: dps, digits: 0" />
+    </tr>
+    <tr>
+      <th>Damage</th>
+      <td data-bind="fixed: damage, digits: 0" />
+    </tr>
+    <tr>
+      <th>Attacks/Sec</th>
+      <td data-bind="fixed: aps, digits: 2" />
+    </tr>
+    <tr>
+      <th>Critical Chance</th>
+      <td data-bind="percent: critchance, digits: 0" />
+    </tr>
+    <tr>
+      <th>Critical Amount</th>
+      <td data-bind="percent: critamt, digits: 0" />
+    </tr>
+    <tr>
+      <th>Strength</th>
+      <td data-bind="text: strength" />
+    </tr>
+    <tr>
+      <th>Dexterity</th>
+      <td data-bind="text: dexterity" />
+    </tr>
+    <tr>
+      <th>Intelligence</th>
+      <td data-bind="text: intelligence" />
+    </tr>
+  </tbody>
 </table>
-
-<h2>Skills</h2>
 
 <script type="text/javascript">
 
@@ -228,9 +248,10 @@ var Formula = {
   life : function(c) {
     var level = +c.level(),
         vitality = +c.vitality(),
-        skill = c.getSkillStat('life');
+        skill = c.getSkillStat('life'),
+        life = c.getItemStat('life');
     var base = 36 + 4 + level + Math.max(10, level - 25) * vitality;
-    return base * (1 + skill / 100);
+    return base * (1 + (life + skill) / 100);
   },
   criticalChance : function(c, ei) {
     var item_chance = c.getItemStat('critchance', ei),
@@ -344,6 +365,7 @@ function Item(slot, items, character) {
   this.dexterity = ko.observable(item.dexterity);
   this.intelligence = ko.observable(item.intelligence);
   this.vitality = ko.observable(item.vitality);
+  this.life = ko.observable(item.life);
   this.allres = ko.observable(item.allres);
   this.singleres = ko.observable(item.singleres);
   this.mindmg = ko.observable(item.mindmg);
@@ -371,6 +393,11 @@ function Weapon(slot, items, character) {
       name : 'Crossbow',
       type : '2h',
       speed : 1.1
+    },
+    {
+      name : 'Sword (1h)',
+      type : '1h',
+      speed : 1.4
     }
   ];
   var wpn = this.weapons[0];

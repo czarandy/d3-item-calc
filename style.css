@@ -8,7 +8,12 @@ body {
 }
 
 .char-table {
-  width: 400px;
+  float: left;
+  width: 370px;
+}
+
+.char-table + .char-table {
+  margin-left: 20px;
 }
 
 .item-table td,
