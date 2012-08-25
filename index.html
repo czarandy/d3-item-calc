@@ -161,39 +161,39 @@
   <tbody>
     <tr>
       <th>Effective HP (w/ Dodge)</th>
-      <td data-bind="fixed: ehpdodge, digits: 0" />
+      <td data-bind="fixed: Formula.ehpdodge($root), digits: 0" />
     </tr>
     <tr>
       <th>Effective HP (w/o Dodge)</th>
-      <td data-bind="fixed: ehp, digits: 0" />
+      <td data-bind="fixed: Formula.ehp($root), digits: 0" />
     </tr>
     <tr>
       <th>Life</th>
-      <td data-bind="fixed: life, digits: 0" />
+      <td data-bind="fixed: Formula.life($root), digits: 0" />
     </tr>
     <tr>
       <th>Dodge</th>
-      <td data-bind="percent: dodge" />
+      <td data-bind="percent: Formula.dodge($root)" />
     </tr>
     <tr>
       <th>Armor</th>
-      <td data-bind="fixed: armor, digits: 0" />
+      <td data-bind="fixed: Formula.armor($root), digits: 0" />
     </tr>
     <tr>
       <th>Damage Reduction</th>
-      <td data-bind="percent: dr" />
+      <td data-bind="percent: Formula.dr($root)" />
     </tr>
     <tr>
       <th>Avg. Resistance</th>
-      <td data-bind="fixed: avgres, digits: 0" />
+      <td data-bind="fixed: Formula.avgres($root), digits: 0" />
     </tr>
     <tr>
       <th>Resistance DR</th>
-      <td data-bind="percent: resreduct" />
+      <td data-bind="percent: Formula.resreduct($root)" />
     </tr>
     <tr>
       <th>Vitality</th>
-      <td data-bind="text: vitality" />
+      <td data-bind="text: Formula.stat('vitality', $root)" />
     </tr>
   </tbody>
 </table>
@@ -201,35 +201,35 @@
   <tbody>
     <tr>
       <th>DPS</th>
-      <td data-bind="fixed: dps, digits: 0" />
+      <td data-bind="fixed: Formula.dps($root), digits: 0" />
     </tr>
     <tr>
       <th>Damage</th>
-      <td data-bind="fixed: damage, digits: 0" />
+      <td data-bind="fixed: Formula.damage($root), digits: 0" />
     </tr>
     <tr>
       <th>Attacks/Sec</th>
-      <td data-bind="fixed: aps, digits: 2" />
+      <td data-bind="fixed: Formula.attacksPerSecond($root), digits: 2" />
     </tr>
     <tr>
       <th>Critical Chance</th>
-      <td data-bind="percent: critchance, digits: 0" />
+      <td data-bind="percent: Formula.criticalChance($root), digits: 0" />
     </tr>
     <tr>
       <th>Critical Amount</th>
-      <td data-bind="percent: critamt, digits: 0" />
+      <td data-bind="percent: Formula.criticalAmount($root), digits: 0" />
     </tr>
     <tr>
       <th>Strength</th>
-      <td data-bind="text: strength" />
+      <td data-bind="text: Formula.stat('strength', $root)" />
     </tr>
     <tr>
       <th>Dexterity</th>
-      <td data-bind="text: dexterity" />
+      <td data-bind="text: Formula.stat('dexterity', $root)" />
     </tr>
     <tr>
       <th>Intelligence</th>
-      <td data-bind="text: intelligence" />
+      <td data-bind="text: Formula.stat('intelligence', $root)" />
     </tr>
   </tbody>
 </table>
@@ -258,7 +258,7 @@ var Formula = {
   },
   life : function(c, ei) {
     var level = +c.level(),
-        vitality = +c.vitality(),
+        vitality = +this.stat('vitality', c, ei),
         skill = c.getSkillStat('life'),
         life = c.getItemStat('life', ei);
     var base = 36 + (4 * level) + Math.max(10, level - 25) * vitality;
@@ -595,76 +595,11 @@ function Character(saved_data) {
     return val;
   }.bind(this);
 
-  this.strength = ko.computed(function() {
-    return Formula.stat('strength', this);
-  }, this);
-  this.dexterity = ko.computed(function() {
-    return Formula.stat('dexterity', this);
-  }, this);
-  this.intelligence = ko.computed(function() {
-    return Formula.stat('intelligence', this);
-  }, this);
-  this.vitality = ko.computed(function() {
-    return Formula.stat('vitality', this);
-  }, this);
-
-  this.life = ko.computed(function() {
-    return Formula.life(this);
-  }, this);
-
-  this.critchance = ko.computed(function() {
-    return Formula.criticalChance(this);
-  }, this);
-
-  this.critamt = ko.computed(function() {
-    return Formula.criticalAmount(this);
-  }, this);
-
-  this.damage = ko.computed(function() {
-    return Formula.damage(this);
-  }, this);
-
-  this.aps = ko.computed(function() {
-    return Formula.attacksPerSecond(this);
-  }, this);
-
-  this.dps = ko.computed(function() {
-    return Formula.dps(this);
-  }, this);
-
   this.excludedps = function(i) {
     var dps = Formula.dps(this),
         excluded_dps = Formula.dps(this, i);
     return Math.max(0, (dps - excluded_dps) / dps);
   }.bind(this);
-
-  this.armor = ko.computed(function() {
-    return Formula.armor(this);
-  }, this);
-
-  this.dr = ko.computed(function() {
-    return Formula.dr(this);
-  }, this);
-
-  this.dodge = ko.computed(function() {
-    return Formula.dodge(this);
-  }, this);
-
-  this.avgres = ko.computed(function() {
-    return Formula.avgres(this);
-  }, this);
-
-  this.resreduct = ko.computed(function() {
-    return Formula.resreduct(this);
-  }, this);
-
-  this.ehp = ko.computed(function() {
-    return Formula.ehp(this);
-  }, this);
-
-  this.ehpdodge = ko.computed(function() {
-    return Formula.ehpdodge(this);
-  }, this);
 
   this.excludeehp = function(i) {
     var ehp = Formula.ehpdodge(this),
