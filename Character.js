@@ -6,6 +6,7 @@ function Character(saved_data) {
   this.level = ko.observable(saved_data.level || 60);
   this.paragon = ko.observable(saved_data.paragon || 0);
 
+  var weapon = new Weapon('Weapon', saved_data.items, this);
   this.items = ko.observableArray([
     new Item('Helm', saved_data.items, this),
     new Item('Shoulders', saved_data.items, this),
@@ -18,7 +19,8 @@ function Character(saved_data) {
     new Item('Ring (R)', saved_data.items, this),
     new Item('Pants', saved_data.items, this),
     new Item('Boots', saved_data.items, this),
-    new Weapon('Weapon', saved_data.items, this)
+    weapon,
+    new Offhand('Offhand', saved_data.items, this, weapon)
   ]);
 
   this.getSkillStat = function(stat) {

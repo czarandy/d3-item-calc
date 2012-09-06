@@ -38,7 +38,7 @@
   </thead>
   <tbody>
     <!-- ko foreach: items -->
-    <tr>
+    <tr data-bind="visible: visible">
       <td data-bind="text: slot" />
       <td>
         <!-- ko if: $data instanceof Item -->
