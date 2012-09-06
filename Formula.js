@@ -70,9 +70,9 @@ var Formula = {
     return 1 - dodge;
   },
   avgres : function(c, ei) {
-    var allres = c.getItemStat('allres'),
+    var allres = c.getItemStat('allres', ei),
         int_res = this.stat('intelligence', c, ei) / 10,
-        singleres = c.getItemStat('singleres') / 6,
+        singleres = c.getItemStat('singleres', ei) / 6,
         skill = c.getSkillStat('resist');
     return (allres + singleres + int_res) * (1 + skill / 100);
   },

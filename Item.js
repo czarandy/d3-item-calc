@@ -24,6 +24,7 @@ function Item(slot, items, character) {
 function Weapon(slot, items, character) {
   Item.call(this, slot, items, character);
 
+  // TODO: This probably needs to go into a WeaponConfig
   this.weapons = [
     {
       name : 'Axe (1h)',
