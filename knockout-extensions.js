@@ -8,10 +8,18 @@ function coalesce() {
 
 ko.observableArray.fn.sum = function(key) {
   return ko.computed(function() {
-    return _.chain(this())
-            .map(function(x) { return x[key]() | 0; })
-            .reduce(function(a, b) { return a + b; }, 0)
-            .value();
+    return _.reduce(
+      _.map(this(), function(x) {
+        if (x.visible()) {
+          return x[key]() | 0;
+        }
+        return 0;
+      }),
+      function(a, b) {
+        return a + b;
+      },
+      0
+     );
   }, this);
 }
 

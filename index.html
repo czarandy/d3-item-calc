@@ -41,7 +41,7 @@
     <tr data-bind="visible: visible">
       <td data-bind="text: slot" />
       <td>
-        <!-- ko if: $data instanceof Item -->
+        <!-- ko if: !($data instanceof Weapon) -->
           <input class="input-small" data-bind="value: armor, valueUpdate: 'afterkeydown'" />
         <!-- /ko -->
 

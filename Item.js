@@ -19,7 +19,7 @@ function Item(slot, items, character) {
   this.critchance = ko.observable(item.critchance);
   this.critamt = ko.observable(item.critamt);
   this.ias = ko.observable(item.ias);
-  this.visible = true;
+  this.visible = ko.observable(true);
 }
 
 function Offhand(slot, items, character, weapon) {
