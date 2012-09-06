@@ -1,12 +1,9 @@
 function Item(slot, items, character) {
   var item = {};
   if (items) {
-    for (var i = 0; i < items.length; ++i) {
-      if (items[i].slot === slot) {
-        item = items[i];
-        break;
-      }
-    }
+    item = _.find(items, function(x) {
+      return x.slot === slot;
+    }) || item;
   }
   this.slot = slot;
   this.armor = ko.observable(item.armor);
