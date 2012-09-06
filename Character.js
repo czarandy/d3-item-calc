@@ -23,13 +23,12 @@ function Character(saved_data) {
 
   this.getSkillStat = function(stat) {
     function helper(skills) {
-      var ret = 0;
-      _.each(skills, function(skill) {
+      return _.reduce(skills, function(memo, skill) {
         if (skill.selected()) {
-          ret += skill[stat] || 0;
+          memo += skill[stat] || 0;
         }
-      });
-      return ret;
+        return memo;
+      }, 0);
     }
     return helper(this.clss().skills) + helper(this.follower().skills);
   }.bind(this);
@@ -40,7 +39,7 @@ function Character(saved_data) {
       val -= this.items()[exclude_item][stat]() || 0;
     }
     if (additional_item) {
-      console.warn('Not supported yet ', additional_item);
+      throw new Error('Not supported yet');
     }
     return val;
   }.bind(this);
