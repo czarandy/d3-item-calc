@@ -119,7 +119,7 @@
     <tr>
       <th>Class</th>
       <td>
-        <select data-bind="options: classes, value: clss, optionsText: 'name'"></select>
+        <select data-bind="options: ClassConfig, value: clss, optionsText: 'name'"></select>
       </td>
     </tr>
     <tr>
@@ -146,7 +146,7 @@
     <tr>
       <th>Follower</th>
       <td>
-        <select data-bind="options: followers, value : follower, optionsText : 'name'"></select>
+        <select data-bind="options: FollowerConfig, value : follower, optionsText : 'name'"></select>
       </td>
     </tr>
     <tr>
@@ -310,37 +310,8 @@ function Weapon(slot, items, character) {
 
 function Character(saved_data) {
 
-  var cur_class = ClassConfig[0];
-  if (saved_data.clss) {
-    for (var i = 0; i < ClassConfig.length; ++i) {
-      if (ClassConfig[i].name === saved_data.clss.name) {
-        cur_class = ClassConfig[i];
-        for (var j = 0; j < saved_data.clss.skills.length; ++j) {
-          if (saved_data.clss.skills[j].selected) {
-            cur_class.skills[j].selected(true);
-          }
-        }
-        break;
-      }
-    }
-  }
-  this.clss = ko.observable(cur_class);
-
-  var cur_follower = FollowerConfig[0];
-  if (saved_data.follower) {
-    for (var i = 0; i < FollowerConfig.length; ++i) {
-      if (FollowerConfig[i].name === saved_data.follower.name) {
-        cur_follower = FollowerConfig[i];
-        for (var j = 0; j < saved_data.follower.skills.length; ++j) {
-          if (saved_data.follower.skills[j].selected) {
-            cur_follower.skills[j].selected(true);
-          }
-        }
-        break;
-      }
-    }
-  }
-  this.follower = ko.observable(cur_follower);
+  this.clss = ko.observable(loadFromConfig(ClassConfig, saved_data.clss));
+  this.follower = ko.observable(loadFromConfig(FollowerConfig, saved_data.follower));
 
   this.level = ko.observable(saved_data.level || 60);
   this.paragon = ko.observable(saved_data.paragon || 0);

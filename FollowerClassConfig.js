@@ -68,3 +68,18 @@ var ClassConfig = [
     ]
   }
 ];
+
+function loadFromConfig(config, saved_data) {
+  if (!saved_data) {
+    return _.first(config);
+  }
+  var entry = _.find(config, function(entry) {
+    return entry.name === saved_data.name;
+  });
+  _.each(saved_data.skills, function(skill, i) {
+    if (skill.selected) {
+      entry.skills[i].selected(true);
+    }
+  });
+  return entry;
+}
