@@ -111,7 +111,51 @@
 </table>
 
 <h2>Item Comparison</h2>
-<table class="table table-striped table-bordered">
+<table class="table table-striped table-bordered table-condensed item-table">
+  <thead>
+    <tr>
+      <th>Slot</th>
+      <th>Armor</th>
+      <th>Strength</th>
+      <th>Dexterity</th>
+      <th>Intelligence</th>
+      <th>Vitality</th>
+      <th>Life %</th>
+      <th>All Res</th>
+      <th>Single Res</th>
+      <th>Min Damage</th>
+      <th>Max Damage</th>
+      <th>Crit Chance</th>
+      <th>Crit Amount</th>
+      <th>IAS</th>
+      <th>DPS</th>
+      <th>EHP</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <select data-bind="options: comparisonslots, value : cmpslot, optionsText : 'name'" />
+      </td>
+      <td data-bind="text: $data.items()[$data.cmpslot().index].armor" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].strength" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].dexterity" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].intelligence" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].vitality" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].life" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].allres" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].singleres" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].mindmg" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].maxdmg"  />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].critchance" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].critamt" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].ias" />
+      <td />
+      <td />
+    </tr>
+    <tr>
+    </tr>
+  </tbody>
 </table>
 
 

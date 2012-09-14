@@ -43,17 +43,20 @@ var ClassConfig = [
   {
     name : 'Demon Hunter',
     primary : 'dexterity',
-    skills : []
+    skills : [
+    ]
   },
   {
     name : 'Monk',
     primary : 'dexterity',
-    skills : []
+    skills : [
+    ]
   },
   {
     name : 'Witch Doctor',
     primary : 'intelligence',
-    skills : []
+    skills : [
+    ]
   },
   {
     name : 'Wizard',

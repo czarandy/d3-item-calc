@@ -23,6 +23,13 @@ function Character(saved_data) {
     new Offhand('Offhand', saved_data.items, this, weapon)
   ]);
 
+  this.comparisonslots = [];
+  for (var i = 0; i < this.items().length; ++i) {
+    var item = this.items()[i];
+    this.comparisonslots.push({ name : item.slot, index : i });
+  }
+  this.cmpslot = ko.observable(this.comparisonslots[0]);
+
   this.getSkillStat = function(stat) {
     function helper(skills) {
       return _.reduce(skills, function(memo, skill) {
