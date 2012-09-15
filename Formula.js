@@ -35,7 +35,7 @@ var Formula = {
     var weapon_speed = ei == 11 ? 1 : c.items()[11].wpn().speed,
         ias = c.getItemStat('ias', ei, ai),
         ias_skill = c.getSkillStat('ias');
-    if (ai) {
+    if (ei == 11 && ai) {
       weapon_speed = ai.wpn().speed;
     }
     return ((ias + ias_skill) / 100) + weapon_speed;
