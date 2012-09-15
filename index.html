@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Diablo III Item Calculator</title>
+<script type="text/javascript" src="knockout-2.1.0.js"></script>
+<script type="text/javascript" src="underscore-1.3.3.js"></script>
+<script type="text/javascript" src="knockout-extensions.js"></script>
+<script type="text/javascript" src="Formula.js"></script>
+<script type="text/javascript" src="FollowerClassConfig.js"></script>
+<script type="text/javascript" src="Character.js"></script>
+<script type="text/javascript" src="Item.js"></script>
+<link type="text/css" href="bootstrap.min.css" rel="stylesheet" />
+<link type="text/css" href="style.css" rel="stylesheet" />
+</head>
+<body>
+<h1>Diablo III Item Calculator</h1>
+<h2>Items</h2>
+<table class="table table-striped table-condensed table-bordered item-table">
+  <thead>
+    <tr>
+      <th>Slot</th>
+      <th>Armor</th>
+      <th>Strength</th>
+      <th>Dexterity</th>
+      <th>Intelligence</th>
+      <th>Vitality</th>
+      <th>Life %</th>
+      <th>All Res</th>
+      <th>Single Res</th>
+      <th>Min Damage</th>
+      <th>Max Damage</th>
+      <th>Crit Chance</th>
+      <th>Crit Amount</th>
+      <th>IAS</th>
+      <th>DPS</th>
+      <th>EHP</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- ko foreach: items -->
+    <tr data-bind="visible: visible">
+      <td data-bind="text: slot" />
+      <td>
+        <!-- ko if: !($data instanceof Weapon) -->
+          <input class="input-small" data-bind="value: armor, valueUpdate: 'afterkeydown'" />
+        <!-- /ko -->
+
+        <!-- ko if: $data instanceof Weapon -->
+          <select data-bind="options: WeaponConfig, value: wpn, optionsText : 'name'"></select>
+        <!-- /ko -->
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: strength, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: dexterity, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: intelligence, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: vitality, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: life, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: allres, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: singleres, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: mindmg, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: maxdmg, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: critchance, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: critamt, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: ias, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td data-bind="percent: $parent.excludedps($index()), digits: 0" />
+      <td data-bind="percent: $parent.excludeehp($index()), digits: 0" />
+    </tr>
+    <!-- /ko -->
+    <tr>
+      <td>Total</td>
+      <td data-bind="text: items.sum('armor')" />
+      <td data-bind="text: items.sum('strength')" />
+      <td data-bind="text: items.sum('dexterity')" />
+      <td data-bind="text: items.sum('intelligence')" />
+      <td data-bind="text: items.sum('vitality')" />
+      <td data-bind="percent: items.sum('life')() / 100, digits: 0" />
+      <td data-bind="text: items.sum('allres')" />
+      <td data-bind="text: items.sum('singleres')" />
+      <td data-bind="text: items.sum('mindmg')" />
+      <td data-bind="text: items.sum('maxdmg')" />
+      <td data-bind="percent: items.sum('critchance')() / 100, digits: 0" />
+      <td data-bind="percent: items.sum('critamt')() / 100, digits: 0" />
+      <td data-bind="percent: items.sum('ias')() / 100, digits: 0" />
+      <td />
+      <td />
+    </tr>
+  </tbody>
+</table>
+
+<h2>Item Comparison</h2>
+<table class="table table-striped table-bordered table-condensed item-table">
+  <thead>
+    <tr>
+      <th>Slot</th>
+      <th>Armor</th>
+      <th>Strength</th>
+      <th>Dexterity</th>
+      <th>Intelligence</th>
+      <th>Vitality</th>
+      <th>Life %</th>
+      <th>All Res</th>
+      <th>Single Res</th>
+      <th>Min Damage</th>
+      <th>Max Damage</th>
+      <th>Crit Chance</th>
+      <th>Crit Amount</th>
+      <th>IAS</th>
+      <th>DPS</th>
+      <th>EHP</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <select data-bind="options: comparisonslots, value : cmpslot, optionsText : 'name'" />
+      </td>
+      <td data-bind="text: $data.items()[$data.cmpslot().index].armor" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].strength" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].dexterity" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].intelligence" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].vitality" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].life" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].allres" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].singleres" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].mindmg" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].maxdmg"  />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].critchance" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].critamt" />
+      <td data-bind="text: $data.items()[$data.cmpslot().index].ias" />
+      <td />
+      <td />
+    </tr>
+    <tr>
+      <td />
+      <td>
+        <!-- ko if: $data.cmpslot().index != 11 -->
+          <input class="input-small" data-bind="value: cmpitem().armor, valueUpdate: 'afterkeydown'" />
+        <!-- /ko -->
+
+        <!-- ko if: $data.cmpslot().index == 11 -->
+          <select data-bind="options: WeaponConfig, value: cmpitem().wpn, optionsText : 'name'"></select>
+        <!-- /ko -->
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().strength, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().dexterity, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().intelligence, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().vitality, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().life, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().allres, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().singleres, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().mindmg, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().maxdmg, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().critchance, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().critamt, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().ias, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td data-bind="percent: cmpdps, digits: 0" />
+      <td data-bind="percent: cmpehp, digits: 0" />
+    </tr>
+  </tbody>
+</table>
+
+
+<h2>Character Sheet</h2>
+<table class="table table-striped table-bordered char-table">
+  <tbody>
+    <tr>
+      <th>Class</th>
+      <td>
+        <select data-bind="options: ClassConfig, value: clss, optionsText: 'name'"></select>
+      </td>
+    </tr>
+    <tr>
+      <th>Level</th>
+      <td>
+        <input class="input-small" data-bind="value: level, valueUpdate: 'afterkeydown'" />
+      </td>
+    </tr>
+    <tr>
+      <th>Paragon Level</th>
+      <td>
+        <input class="input-small" data-bind="value: paragon, valueUpdate: 'afterkeydown'" />
+      </td>
+    </tr>
+    <tr>
+      <th>Skills</th>
+      <td data-bind="foreach: $data.clss().skills">
+        <label class="checkbox">
+          <input type="checkbox" data-bind="checked: selected">
+          <span data-bind="text: name" />
+        </label>
+      </td>
+    </tr>
+    <tr>
+      <th>Follower</th>
+      <td>
+        <select data-bind="options: FollowerConfig, value : follower, optionsText : 'name'"></select>
+      </td>
+    </tr>
+    <tr>
+      <th>Follower Skills</th>
+      <td data-bind="foreach: $data.follower().skills">
+        <label class="checkbox">
+          <input type="checkbox" data-bind="checked: selected">
+          <span data-bind="text: name" />
+        </label>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<table class="table table-striped table-bordered char-table">
+  <tbody>
+    <tr>
+      <th>Effective HP (w/ Dodge)</th>
+      <td data-bind="fixed: Formula.ehpdodge($root), digits: 0" />
+    </tr>
+    <tr>
+      <th>Effective HP (w/o Dodge)</th>
+      <td data-bind="fixed: Formula.ehp($root), digits: 0" />
+    </tr>
+    <tr>
+      <th>Life</th>
+      <td data-bind="fixed: Formula.life($root), digits: 0" />
+    </tr>
+    <tr>
+      <th>Dodge</th>
+      <td data-bind="percent: Formula.dodge($root)" />
+    </tr>
+    <tr>
+      <th>Armor</th>
+      <td data-bind="fixed: Formula.armor($root), digits: 0" />
+    </tr>
+    <tr>
+      <th>Armor DR</th>
+      <td data-bind="percent: Formula.dr($root)" />
+    </tr>
+    <tr>
+      <th>Avg. Resistance</th>
+      <td data-bind="fixed: Formula.avgres($root), digits: 0" />
+    </tr>
+    <tr>
+      <th>Resistance DR</th>
+      <td data-bind="percent: Formula.resreduct($root)" />
+    </tr>
+    <tr>
+      <th>Vitality</th>
+      <td data-bind="text: Formula.stat('vitality', $root)" />
+    </tr>
+  </tbody>
+</table>
+<table class="table table-striped table-bordered char-table">
+  <tbody>
+    <tr>
+      <th>DPS</th>
+      <td data-bind="fixed: Formula.dps($root), digits: 0" />
+    </tr>
+    <tr>
+      <th>Damage</th>
+      <td data-bind="fixed: Formula.damage($root), digits: 0" />
+    </tr>
+    <tr>
+      <th>Attacks/Sec</th>
+      <td data-bind="fixed: Formula.attacksPerSecond($root), digits: 2" />
+    </tr>
+    <tr>
+      <th>Critical Chance</th>
+      <td data-bind="percent: Formula.criticalChance($root), digits: 0" />
+    </tr>
+    <tr>
+      <th>Critical Amount</th>
+      <td data-bind="percent: Formula.criticalAmount($root), digits: 0" />
+    </tr>
+    <tr>
+      <th>Strength</th>
+      <td data-bind="text: Formula.stat('strength', $root)" />
+    </tr>
+    <tr>
+      <th>Dexterity</th>
+      <td data-bind="text: Formula.stat('dexterity', $root)" />
+    </tr>
+    <tr>
+      <th>Intelligence</th>
+      <td data-bind="text: Formula.stat('intelligence', $root)" />
+    </tr>
+  </tbody>
+</table>
+<script type="text/javascript">
+var saved_data = JSON.parse(localStorage.getItem('d3_data')) || {};
+ko.applyBindings(new Character(saved_data));
+</script>
+</body>
+</html>

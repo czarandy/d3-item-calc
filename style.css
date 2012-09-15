@@ -1,0 +1,29 @@
+body {
+  padding: 20px;
+}
+
+.item-table {
+  width: 700px;
+  table-layout: fixed;
+}
+
+.char-table {
+  float: left;
+  width: 370px;
+}
+
+.char-table + .char-table {
+  margin-left: 20px;
+}
+
+.item-table td,
+.item-table th {
+  padding: 2px;
+  text-align: center;
+  width: 75px;
+}
+
+.item-table input,
+.item-table select {
+  width: 70px;
+}
