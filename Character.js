@@ -23,12 +23,14 @@ function Character(saved_data) {
     new Offhand('Offhand', saved_data.items, this, weapon)
   ]);
 
+  // Comparison item
   this.comparisonslots = [];
   for (var i = 0; i < this.items().length; ++i) {
     var item = this.items()[i];
     this.comparisonslots.push({ name : item.slot, index : i });
   }
   this.cmpslot = ko.observable(this.comparisonslots[0]);
+  this.cmpitem = ko.observable(new Weapon('Comparison', {}, this));
 
   this.getSkillStat = function(stat) {
     function helper(skills) {
@@ -48,7 +50,7 @@ function Character(saved_data) {
       val -= this.items()[exclude_item][stat]() || 0;
     }
     if (additional_item) {
-      throw new Error('Not supported yet');
+      val += (additional_item[stat]() | 0);
     }
     return val;
   }.bind(this);
@@ -64,6 +66,18 @@ function Character(saved_data) {
         excluded_ehp = Formula.ehpdodge(this, i);
     return Math.max(0, (ehp - excluded_ehp) / ehp);
   }.bind(this);
+
+  this.cmpdps = ko.computed(function() {
+    var dps = Formula.dps(this),
+        cmpdps = Formula.dps(this, this.cmpslot().index, this.cmpitem());
+    return (cmpdps - dps) / dps;
+  }, this);
+
+  this.cmpehp = ko.computed(function() {
+    var ehp = Formula.ehpdodge(this),
+        cmpehp = Formula.ehpdodge(this, this.cmpslot().index, this.cmpitem());
+    return (cmpehp - ehp) / ehp;
+  }, this);
 
   // Save data to local storage when anything changes. This is somewhat
   // roundabout because we have to:

@@ -46,7 +46,7 @@
         <!-- /ko -->
 
         <!-- ko if: $data instanceof Weapon -->
-          <select data-bind="options: weapons, value: wpn, optionsText : 'name'"></select>
+          <select data-bind="options: WeaponConfig, value: wpn, optionsText : 'name'"></select>
         <!-- /ko -->
       </td>
       <td>
@@ -154,6 +154,54 @@
       <td />
     </tr>
     <tr>
+      <td />
+      <td>
+        <!-- ko if: $data.cmpslot().index != 11 -->
+          <input class="input-small" data-bind="value: cmpitem().armor, valueUpdate: 'afterkeydown'" />
+        <!-- /ko -->
+
+        <!-- ko if: $data.cmpslot().index == 11 -->
+          <select data-bind="options: WeaponConfig, value: cmpitem().wpn, optionsText : 'name'"></select>
+        <!-- /ko -->
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().strength, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().dexterity, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().intelligence, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().vitality, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().life, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().allres, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().singleres, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().mindmg, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().maxdmg, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().critchance, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().critamt, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td>
+        <input class="input-small" data-bind="value: cmpitem().ias, valueUpdate: 'afterkeydown'" />
+      </td>
+      <td data-bind="percent: cmpdps, digits: 0" />
+      <td data-bind="percent: cmpehp, digits: 0" />
     </tr>
   </tbody>
 </table>
