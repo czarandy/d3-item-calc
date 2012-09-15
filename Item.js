@@ -41,12 +41,82 @@ var WeaponConfig = [
     speed : 1
   },
   {
+    name : 'Bow',
+    type : '2h',
+    speed : 1.4
+  },
+  {
+    name : 'Ceremonial Knife',
+    type : '1h',
+    speed : 1.4
+  },
+  {
     name : 'Crossbow',
     type : '2h',
     speed : 1.1
   },
   {
+    name : 'Dagger',
+    type : '1h',
+    speed : 1.5
+  },
+  {
+    name : 'Daibo',
+    type : '2h',
+    speed : 1.1
+  },
+  {
+    name : 'Fist Weapon',
+    type : '1h',
+    speed : 1.4
+  },
+  {
+    name : 'Hand Crossbow',
+    type : '1h',
+    speed : 1.6
+  },
+  {
+    name : 'Mace (1h)',
+    type : '1h',
+    speed : 1.2
+  },
+  {
+    name : 'Mace (2h)',
+    type : '2h',
+    speed : 0.9
+  },
+  {
+    name : 'Mighty Weapon (1h)',
+    type : '1h',
+    speed : 1.3
+  },
+  {
+    name : 'Mighty Weapon (2h)',
+    type : '2h',
+    speed : 1
+  },
+  {
+    name : 'Polearm',
+    type : '2h',
+    speed : 0.95
+  },
+  {
+    name : 'Spear',
+    type : '1h',
+    speed : 1.2
+  },
+  {
+    name : 'Staff',
+    type : '2h',
+    speed : 1
+  },
+  {
     name : 'Sword (1h)',
+    type : '1h',
+    speed : 1.4
+  },
+  {
+    name : 'Wand',
     type : '1h',
     speed : 1.4
   }
